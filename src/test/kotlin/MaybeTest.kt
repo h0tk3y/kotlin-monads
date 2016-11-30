@@ -1,0 +1,24 @@
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class MaybeTest {
+    @Test fun testBindJust() {
+        val j = Maybe.Just(1)
+        val j1 = j
+                .bind { returns(it * 2) }
+                .bind { returns(it * 3) }
+                .bind { returns(it * 4) }
+        assertEquals(Maybe.Just(1 * 2 * 3 * 4), j1)
+    }
+
+    @Test fun testBindNone() {
+        val j = Maybe.Just(1)
+        val j1 = j.bind { returns(it * 3) }
+        assertTrue(j1 is Maybe.Just)
+        val j2 = j1
+                .bind { if (it > 1) none() else returns(it) }
+                .bind { returns(it * 2) }
+        assertEquals(Maybe.None, j2)
+    }
+}
