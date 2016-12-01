@@ -1,5 +1,7 @@
 # kotlin-monads
 
+[![](https://jitpack.io/v/h0tk3y/kotlin-monads.svg)](https://jitpack.io/#h0tk3y/kotlin-monads) [![](https://img.shields.io/badge/kotlin-1.1--M03-blue.svg)](http://kotlinlang.org/)
+
 An attempt to implement monads in Kotlin.
 
 _Note: this project uses Kotlin 1.1 EAP build. Use the 1.1 EAP IDE plugin to work with it._
@@ -20,7 +22,18 @@ We still need the downcast `as Maybe`, but at least it's checked.
 
 ## Usage
 
-See the usage examples inside [`src/test/kotlin`](https://github.com/h0tk3y/kotlin-monads/tree/master/src/test/kotlin).
+Add as a dependency:
+
+    repositories {
+        ...
+        maven { url 'https://jitpack.io' }
+    }
+    
+    dependencies {
+	    compile 'com.github.h0tk3y:kotlin-monads:0.1'
+	}
+
+See the usage examples in [tests](https://github.com/h0tk3y/kotlin-monads/tree/master/src/test/kotlin/com/github/h0tk3y/kotlinMonads).
 
 ## How to implement a monad
 
