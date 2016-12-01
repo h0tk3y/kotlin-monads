@@ -1,3 +1,5 @@
+package com.github.h0tk3y.kotlinMonad
+
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

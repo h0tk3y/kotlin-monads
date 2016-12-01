@@ -1,3 +1,5 @@
+package com.github.h0tk3y.kotlinMonad
+
 data class MonadList<out T>(val list: List<T>) : Monad<MonadList<*>, T>, List<T> by list {
     override fun <R> bind(f: Binder<MonadList<*>, T, R>): MonadList<R> =
             MonadList(list.flatMap { f(MonadListReturn, it) as MonadList })

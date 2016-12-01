@@ -1,3 +1,5 @@
+package com.github.h0tk3y.kotlinMonad
+
 sealed class Maybe<out T> : Monad<Maybe<*>, T> {
     data class Just<T>(val value: T) : Maybe<T>() {
         override fun toString() = "Just $value"

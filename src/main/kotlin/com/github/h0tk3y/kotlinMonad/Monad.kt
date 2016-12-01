@@ -1,3 +1,5 @@
+package com.github.h0tk3y.kotlinMonad
+
 interface Return<M> {
     fun <T> returns(t: T): Monad<M, T>
 }

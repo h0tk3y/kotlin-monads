@@ -1,3 +1,4 @@
+package com.github.h0tk3y.kotlinMonad
 
 import java.io.Serializable
 import java.util.*
