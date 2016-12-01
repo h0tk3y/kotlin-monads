@@ -1,4 +1,4 @@
-package com.github.h0tk3y.kotlinMonad
+package com.github.h0tk3y.kotlinMonads
 
 interface Return<M> {
     fun <T> returns(t: T): Monad<M, T>

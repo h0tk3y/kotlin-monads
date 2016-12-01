@@ -1,4 +1,4 @@
-package com.github.h0tk3y.kotlinMonad
+package com.github.h0tk3y.kotlinMonads
 
 sealed class Maybe<out T> : Monad<Maybe<*>, T> {
     data class Just<T>(val value: T) : Maybe<T>() {

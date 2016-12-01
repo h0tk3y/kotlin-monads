@@ -1,4 +1,4 @@
-package com.github.h0tk3y.kotlinMonad
+package com.github.h0tk3y.kotlinMonads
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

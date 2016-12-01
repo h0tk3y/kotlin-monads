@@ -1,4 +1,4 @@
-package com.github.h0tk3y.kotlinMonad
+package com.github.h0tk3y.kotlinMonads
 
 sealed class Either<F, out T> : Monad<Either<F, *>, T> {
     class Left<F>(val leftValue: F) : Either<F, Nothing>()

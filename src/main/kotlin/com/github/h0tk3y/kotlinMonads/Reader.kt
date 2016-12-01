@@ -1,4 +1,4 @@
-package com.github.h0tk3y.kotlinMonad
+package com.github.h0tk3y.kotlinMonads
 
 class Reader<E, out T>(val runReader: (E) -> T) : Monad<Reader<E, *>, T> {
     override fun <R> bind(f: Binder<Reader<E, *>, T, R>): Reader<E, R> = Reader { a ->

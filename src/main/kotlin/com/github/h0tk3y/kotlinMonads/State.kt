@@ -1,4 +1,4 @@
-package com.github.h0tk3y.kotlinMonad
+package com.github.h0tk3y.kotlinMonads
 
 class State<S, out T>(val runState: (S) -> Pair<S, T>) : Monad<State<S, *>, T> {
     override fun <R> bind(f: Binder<State<S, *>, T, R>): State<S, R> = State { s ->

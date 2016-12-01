@@ -1,4 +1,4 @@
-package com.github.h0tk3y.kotlinMonad
+package com.github.h0tk3y.kotlinMonads
 
 data class Writer<T>(val result: T, val log: String) : Monad<Writer<*>, T> {
     override fun <R> bind(f: Return<Writer<*>>.(T) -> Monad<Writer<*>, R>): Writer<R> {
