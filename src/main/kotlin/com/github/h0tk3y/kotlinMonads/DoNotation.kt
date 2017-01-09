@@ -1,55 +1,61 @@
+@file:Suppress("EXPERIMENTAL_FEATURE_WARNING")
+
 package com.github.h0tk3y.kotlinMonads
 
 import java.io.Serializable
 import java.util.*
-import kotlin.jvm.internal.CoroutineImpl
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.CoroutineIntrinsics
+import kotlin.coroutines.startCoroutine
 
 fun <M : Monad<M, *>, T> doWith(m: Monad<M, T>,
-                                coroutine c: DoController<M, T>.(T) -> Continuation<Unit>): Monad<M, T> {
-    return (m bind { x -> doWith(this, x, c) })
-}
+                                c: suspend DoController<M, T>.() -> Unit): Monad<M, T> =
+        m.bind { t -> doWith(this, t, c) }
+
 
 fun <M : Monad<M, *>, T> doWith(aReturn: Return<M>,
                                 defaultValue: T,
-                                coroutine c: DoController<M, T>.(T) -> Continuation<Unit>): Monad<M, T> {
+                                c: suspend DoController<M, T>.() -> Unit): Monad<M, T> {
     val controller = DoController(aReturn, defaultValue)
-    c(controller, defaultValue).resume(Unit)
+    c.startCoroutine(controller, object : Continuation<Unit> {
+        override fun resume(value: Unit) {}
+        override fun resumeWithException(exception: Throwable) = throw exception
+    })
     return controller.lastResult
 }
 
+val labelField by lazy {
+    val jClass = Class.forName("kotlin.jvm.internal.RestrictedCoroutineImpl")
+    return@lazy jClass.getDeclaredField("label").apply { isAccessible = true }
+}
+
+var <T> Continuation<T>.label
+    get() = labelField.get(this)
+    set(value) = labelField.set(this@label, value)
+
 private fun <T, R> backupLabel(c: Continuation<T>, block: Continuation<T>.() -> R): R {
-    val reflect = CoroutineImpl::class.java
-    val labelField = reflect.getDeclaredField("label")
-
-    labelField.isAccessible = true
-    val l = labelField.get(c)
-    labelField.isAccessible = false
-
+    val backupLabel = c.label
     val r = block(c)
-
-    labelField.isAccessible = true
-    labelField.set(c, l)
-    labelField.isAccessible = false
-
+    c.label = backupLabel
     return r
 }
 
 class DoController<M : Monad<M, *>, T>(val returning: Return<M>,
-                                       initialValue: T) : Serializable {
-    var lastResult: Monad<M, T> = returning.returns(initialValue)
-        private set
+                                       val value: T) : Serializable, Return<M> by returning {
+    var lastResult: Monad<M, T> = returning.returns(value)
+        internal set
 
     private val stackSignals = Stack<Boolean>().apply { push(false) }
 
-    fun <T> returns(t: T) = returning.returns(t)
-
-    suspend fun bind(m: Monad<M, T>, c: Continuation<T>) {
+    suspend fun bind(m: Monad<M, T>): T = CoroutineIntrinsics.suspendCoroutineOrReturn { c ->
         stackSignals.pop()
         stackSignals.push(true)
         var anyCont = false
         val o = m.bind { x ->
             stackSignals.push(false)
-            backupLabel(c) { c.resume(x) }
+            backupLabel(c) {
+                c.resume(x)
+            }
             val contHasMonad = stackSignals.pop()
             if (contHasMonad) {
                 anyCont = true
@@ -59,9 +65,10 @@ class DoController<M : Monad<M, *>, T>(val returning: Return<M>,
             }
         }
         lastResult = if (anyCont) o else m
+        CoroutineIntrinsics.SUSPENDED
     }
 
-    suspend fun then(m: Monad<M, T>, c: Continuation<Unit>) {
+    suspend fun then(m: Monad<M, T>) = CoroutineIntrinsics.suspendCoroutineOrReturn<Unit> { c ->
         stackSignals.pop()
         stackSignals.push(true)
         var anyCont = false
@@ -77,6 +84,7 @@ class DoController<M : Monad<M, *>, T>(val returning: Return<M>,
             }
         }
         lastResult = if (anyCont) o else m
+        CoroutineIntrinsics.SUSPENDED
     }
 }
 

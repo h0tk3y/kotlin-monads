@@ -1,3 +1,5 @@
+@file:Suppress("EXPERIMENTAL_FEATURE_WARNING")
+
 package com.github.h0tk3y.kotlinMonads
 
 import org.junit.Assert.assertEquals
@@ -6,8 +8,8 @@ import org.junit.Test
 
 class DoNotationTest {
     @Test fun testLinearDo() {
-        val m = doWith(just(1)) { i ->
-            val j = bind(returns(i * 2))
+        val m = doWith(just(1)) {
+            val j = bind(returns(value * 2))
             val k = bind(returns(j * 3))
             then(returns(k + 1))
         }
@@ -16,8 +18,8 @@ class DoNotationTest {
 
     @Test fun testControlFlow() {
         var called = false
-        val m = doWith(just(1)) { i ->
-            val j = bind(returns(i * 2))
+        val m = doWith(just(1)) {
+            val j = bind(returns(value * 2))
             val k = bind(if (j % 2 == 0) none() else just(j))
             called = true
             then(returns(k))
@@ -56,8 +58,8 @@ class DoNotationTest {
 
     @Test fun testBindLastStatement() {
         val results = mutableListOf<Int>()
-        val m = doWith(monadListOf(2)) { i ->
-            val x = bind(monadListOf(i + 1, i * i))
+        val m = doWith(monadListOf(2)) {
+            val x = bind(monadListOf(value + 1, value * value))
             val z = bind(returns(x))
             results.add(z)
         }
