@@ -1,37 +1,47 @@
-@file:Suppress("EXPERIMENTAL_FEATURE_WARNING")
+@file:Suppress("EXPERIMENTAL_FEATURE_WARNING", "UNCHECKED_CAST")
 
 package com.github.h0tk3y.kotlinMonads
 
+import kotlinx.coroutines.experimental.Here
 import java.io.Serializable
 import java.util.*
 import kotlin.coroutines.Continuation
-import kotlin.coroutines.CoroutineIntrinsics
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.RestrictsSuspension
+import kotlin.coroutines.intrinsics.SUSPENDED_MARKER
+import kotlin.coroutines.intrinsics.suspendCoroutineOrReturn
 import kotlin.coroutines.startCoroutine
 
 fun <M : Monad<M, *>, T> doWith(m: Monad<M, T>,
-                                c: suspend DoController<M, T>.() -> Unit): Monad<M, T> =
+                                c: suspend DoController<M, T>.(T) -> Unit): Monad<M, T> =
         m.bind { t -> doWith(this, t, c) }
-
 
 fun <M : Monad<M, *>, T> doWith(aReturn: Return<M>,
                                 defaultValue: T,
-                                c: suspend DoController<M, T>.() -> Unit): Monad<M, T> {
+                                c: suspend DoController<M, T>.(T) -> Unit): Monad<M, T> {
     val controller = DoController(aReturn, defaultValue)
-    c.startCoroutine(controller, object : Continuation<Unit> {
+    val f: suspend DoController<M, T>.() -> Unit = { c(defaultValue) }
+    f.startCoroutine(controller, object : Continuation<Unit> {
+        override fun resumeWithException(exception: Throwable) {}
         override fun resume(value: Unit) {}
-        override fun resumeWithException(exception: Throwable) = throw exception
+        override val context: CoroutineContext = Here
     })
     return controller.lastResult
 }
 
-val labelField by lazy {
-    val jClass = Class.forName("kotlin.jvm.internal.RestrictedCoroutineImpl")
+private val labelField by lazy {
+    val jClass = Class.forName("kotlin.jvm.internal.CoroutineImpl")
     return@lazy jClass.getDeclaredField("label").apply { isAccessible = true }
 }
 
-var <T> Continuation<T>.label
-    get() = labelField.get(this)
-    set(value) = labelField.set(this@label, value)
+private val innerContinuationField by lazy {
+    val jClass = Class.forName("kotlinx.coroutines.experimental.DispatchedContinuation")
+    return@lazy jClass.getDeclaredField("continuation").apply { isAccessible = true }
+}
+
+private var <T> Continuation<T>.label
+    get() = labelField.get(innerContinuationField.get(this))
+    set(value) = labelField.set(innerContinuationField.get(this@label), value)
 
 private fun <T, R> backupLabel(c: Continuation<T>, block: Continuation<T>.() -> R): R {
     val backupLabel = c.label
@@ -40,6 +50,7 @@ private fun <T, R> backupLabel(c: Continuation<T>, block: Continuation<T>.() -> 
     return r
 }
 
+@RestrictsSuspension
 class DoController<M : Monad<M, *>, T>(val returning: Return<M>,
                                        val value: T) : Serializable, Return<M> by returning {
     var lastResult: Monad<M, T> = returning.returns(value)
@@ -47,7 +58,7 @@ class DoController<M : Monad<M, *>, T>(val returning: Return<M>,
 
     private val stackSignals = Stack<Boolean>().apply { push(false) }
 
-    suspend fun bind(m: Monad<M, T>): T = CoroutineIntrinsics.suspendCoroutineOrReturn { c ->
+    suspend fun bind(m: Monad<M, T>): T = suspendCoroutineOrReturn { c ->
         stackSignals.pop()
         stackSignals.push(true)
         var anyCont = false
@@ -65,10 +76,10 @@ class DoController<M : Monad<M, *>, T>(val returning: Return<M>,
             }
         }
         lastResult = if (anyCont) o else m
-        CoroutineIntrinsics.SUSPENDED
+        SUSPENDED_MARKER
     }
 
-    suspend fun then(m: Monad<M, T>) = CoroutineIntrinsics.suspendCoroutineOrReturn<Unit> { c ->
+    suspend fun then(m: Monad<M, T>) = suspendCoroutineOrReturn<Unit> { c ->
         stackSignals.pop()
         stackSignals.push(true)
         var anyCont = false
@@ -84,15 +95,6 @@ class DoController<M : Monad<M, *>, T>(val returning: Return<M>,
             }
         }
         lastResult = if (anyCont) o else m
-        CoroutineIntrinsics.SUSPENDED
+        SUSPENDED_MARKER
     }
-}
-
-fun main(args: Array<String>) {
-    val m = doWith(monadListOf(0)) {
-        val x = bind(monadListOf(1, 2, 3))
-        val y = bind(monadListOf(x, x))
-        then(monadListOf(y, y + 1))
-    }
-    println(m)
 }
