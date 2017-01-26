@@ -31,7 +31,7 @@ Add as a dependency:
     }
     
     dependencies {
-	    compile 'com.github.h0tk3y:kotlin-monads:0.2'
+	    compile 'com.github.h0tk3y:kotlin-monads:0.3'
 	}
 
 See the usage examples in [tests](https://github.com/h0tk3y/kotlin-monads/tree/master/src/test/kotlin/com/github/h0tk3y/kotlinMonads).
