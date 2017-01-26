@@ -139,6 +139,7 @@ The result type parameter (`R` in `Monad<M, R`) is usually inferred, and the com
      val m = doReturning(MonadListReturn) {
          for (i in 1..10)
              bind(monadListOf(0, 0))
+	 returns(0)
      } as MonadList
      
  One would expect 1024 items here, but the result only contains 11! That's because `i` is mutable and is shared between all the calls that `bind` makes.
