@@ -8,62 +8,48 @@ import org.junit.Test
 
 class DoNotationTest {
     @Test fun testLinearDo() {
-        val m = doWith(just(1)) {
-            val j = bind(returns(value * 2))
+        val m = just(1).bindDo { x ->
+            val j = bind(returns(x * 2))
             val k = bind(returns(j * 3))
-            then(returns(k + 1))
+            returns(k + 1)
         }
         assertEquals(just(7), m)
     }
 
     @Test fun testControlFlow() {
         var called = false
-        val m = doWith(just(1)) {
-            val j = bind(returns(value * 2))
+        val m = just(1).bindDo { x ->
+            val j = bind(returns(x * 2))
             val k = bind(if (j % 2 == 0) none() else just(j))
             called = true
-            then(returns(k))
+            returns(k)
         }
-        assertEquals(Maybe.None, m)
+        assertEquals(None, m)
         assertFalse(called)
     }
 
     @Test fun testMultipleBranches() {
         var iIterations = 0
         var jIterations = 0
-        var kIterations = 0
-        val m = doWith(monadListOf(0)) {
+        val m = doReturning(MonadListReturn) {
             val i = bind(monadListOf(1, 2, 3))
             ++iIterations
             val j = bind(monadListOf(i, i))
             ++jIterations
-            then(monadListOf(j, j + 1))
-            ++kIterations
+            monadListOf(j, j + 1)
         }
         assertEquals(monadListOf(1, 2, 1, 2, 2, 3, 2, 3, 3, 4, 3, 4), m)
         assertEquals(3, iIterations)
         assertEquals(6, jIterations)
-        assertEquals(12, kIterations)
     }
 
     @Test fun testMultipleApplications() {
-        val m = doWith(monadListOf(1)) {
+        val m = doReturning(MonadListReturn) {
             then(monadListOf(1, 1))
             then(monadListOf(1, 1))
             then(monadListOf(1, 1))
-            then(monadListOf(1, 1))
+            monadListOf(1, 1)
         } as MonadList
         assertEquals(16, m.size)
-    }
-
-    @Test fun testBindLastStatement() {
-        val results = mutableListOf<Int>()
-        val m = doWith(monadListOf(2)) {
-            val x = bind(monadListOf(value + 1, value * value))
-            val z = bind(returns(x))
-            results.add(z)
-        }
-        assertEquals(listOf(3, 4), results)
-        assertEquals(results, m)
     }
 }

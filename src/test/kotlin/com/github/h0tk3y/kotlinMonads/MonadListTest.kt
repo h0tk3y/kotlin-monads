@@ -25,10 +25,10 @@ class MonadListTest {
     }
 
     @Test fun simple() {
-        val m = doWith(monadListOf(0)) {
+        val m = monadListOf(0).bindDo {
             val x = bind(monadListOf(1, 2, 3))
             val y = bind(monadListOf(x, x))
-            then(monadListOf(y, y + 1))
+            monadListOf(y, y + 1)
         } as MonadList
         assertEquals(monadListOf(1, 2, 1, 2, 2, 3, 2, 3, 3, 4, 3, 4), m)
     }

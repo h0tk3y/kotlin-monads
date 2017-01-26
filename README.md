@@ -1,18 +1,19 @@
 # kotlin-monads
 
-[![](https://jitpack.io/v/h0tk3y/kotlin-monads.svg)](https://jitpack.io/#h0tk3y/kotlin-monads) [![](https://img.shields.io/badge/kotlin-1.1--M04-blue.svg)](http://kotlinlang.org/)
+[![](https://jitpack.io/v/h0tk3y/kotlin-monads.svg)](https://jitpack.io/#h0tk3y/kotlin-monads) [![](https://img.shields.io/badge/kotlin-1.1--beta--22-blue.svg)](http://kotlinlang.org/)
 
-An attempt to implement monads in Kotlin.
+An attempt to implement monads in Kotlin, deeply inspired by Haskell monads, but restricted within the Kotlin type system.
 
-_Note: this project uses Kotlin 1.1 EAP build. Use the 1.1 EAP IDE plugin to work with it._
+_Note: this project uses Kotlin 1.1 Beta build. Use the 1.1 Beta IDE plugin to work with it._
 
 ## The monad type
 
 Monadic types are represented by the `Monad<M, T>` interface, 
-where `M` **should be the type of the implementation** with its `T` star-projected. Examples: `Maybe<T> : Monad<Maybe<*>, T>`, `State<S, T> : Monad<State<S, *>, T>`. 
+where `M` **should be the type of the implementation** with only its `T` star-projected. Examples: `Maybe<T> : Monad<Maybe<*>, T>`, `State<S, T> : Monad<State<S, *>, T>`. 
 
-The purpose is: with `Monad` defined in this way, we
-are almost able to say that a function returns the same `Monad` implementation but with a different type parameter:
+With `Monad` defined in this way, we
+are almost able to say in terms of the Kotlin type system that a function returns the same `Monad` implementation but 
+with a different type argument `R` instead of `T`:
 
     fun <T, R, M : Monad<M, *>> Monad<M, T>.map(f: (T) -> R) = bind { returns(f(it)) }
 
@@ -49,13 +50,20 @@ See the usage examples in [tests](https://github.com/h0tk3y/kotlin-monads/tree/m
     
 The monad implementation should only provide one function `bind` (Haskell: `>>=`), 
 no separate `return` is there, instead, if you look at the signature of `bind`, you'll see that the function to bind with is `f: Return<This>.(T) -> Monad<This, R>`. 
-
-It means that a monad implementation should provide the `Return<M>` as well and pass it to `f` each time, so that inside `f` its `returns` could be used:
+It means that a `Monad<M, T>` implementation should provide the `Return<M>` as well and pass it to `f` each time, so that inside `f` its `returns` could be used:
 
     just(3) bind { returns(it * it) }
     
-I found no direct equivalent to `return` in Haskell, which could be used even outside bind functions. Outside the `bind` blocks, you should either
-wrap the values into your monads manually or require a `Return<M>`, which can wrap `T` into `Monad<M, T>` for you.
+There seems to be no direct equivalent to Haskell `return`, which could be used outside any context like `bind` blocks. Outside the `bind` blocks, you should either
+wrap the values into your monads manually or require a `Return<M>`, which can wrap `T` into `Monad<M, T>` for you. 
+
+Mind the [monad laws](https://wiki.haskell.org/Monad_laws). A correct monad implementation follows these three rules (rephrased in terms of `kotlin-monads`):
+
+1. **Left identity**: `returns(x) bind { f(it) }` should be equivalent to `f(x)`
+ 
+2. **Right identity**: `m bind { returns(it) }` should be equivalent to `m`
+
+3. **Associativity**: `m bind { f(it) } bind { g(it) }` should be equivalent to `m bind { f(it) bind { g(it) } }`
 
 Also, it's good to make the return type of `bind` narrower, e.g. `bind` of `Maybe<T>` would rather return `Maybe<R>` than `Monad<Maybe<*>, R>`, it allows not to cast 
 the result of a `bind` called on a known monad type.
@@ -89,21 +97,46 @@ Example implementation:
 
 ## Do notation
 
-With the power of Kotlin coroutines, we can have a limited variant of do notation:
+With the power of Kotlin coroutines, we can even have an equivalent of the [*Haskell do notation*](https://en.wikibooks.org/wiki/Haskell/do_notation):
 
-    val m = doWith(monadListOf(0)) {
+Simple example that performs a monadic list nondeterministic expansion:
+
+    val m = doReturning(MonadListReturn) {
         val x = bind(monadListOf(1, 2, 3))
-        val y = bind(monadListOf(x, x))
-        then(monadListOf(y, y + 1))
-    } as MonadList
+        val y = bind(monadListOf(x, x + 1))
+        monadListOf(y, x * y)
+    }
     
     assertEquals(monadListOf(1, 2, 1, 2, 2, 3, 2, 3, 3, 4, 3, 4), m)
     
- The limitation is that the intermediate results in a single _do_ block are restricted to the same value type `T`. You can, however, use nested _do_ blocks to use different result types.
+Or applied to an existing monad for convenience:
+
+    val m = monadListOf(1, 2, 3).bindDo { x ->
+        val y = bind(monadListOf(x, x + 1))
+        monadListOf(y, x * y)
+    }
+    
+This is effectively equivalent to the following code written with only simple `bind`:
+
+    val m = monadListOf(1, 2, 3).bind { x ->
+        monadListOf(x, x + 1).bind { y -> 
+            monadList(y, x * y)
+        }
+    }
+    
+Note that, with simple `bind`, each *transformation* requires another inner scope if it uses the variables bound outside, 
+which would lead to some kind of callback hell. 
+This problem is effectively solved using the Kotlin coroutines: the compiler performs the CPS transformation of a plain
+ code block under the hood. However, this coroutines use case is somewhat out of conventions: it might resume the same continuation
+ several times and uses quite a dirty hack to do that.
+    
+The result type parameter (`R` in `Monad<M, R`) is usually inferred, and the compiler controls the flow inside a *do block*, but still you need to
+ downcast the `Monad<M, R>` to your actual monad type (e.g. `Monad<Maybe<*>, R>` to `Maybe<R>`), because the type system doesn't seem to allow this to be done
+ automatically (if you know a way, please tell me).
  
- **Be careful with mutable state** in _do_ blocks, since all continuation calls will share it, resulting into something unexpected:
+ **Be careful with mutable state** in _do_ blocks, since all continuation calls will share it, sometimes resulting into counter-intuitive results:
  
-     val m = doWith(monadListOf(0)) {
+     val m = doReturning(MonadListReturn) {
          for (i in 1..10)
              bind(monadListOf(0, 0))
      } as MonadList
