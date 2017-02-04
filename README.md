@@ -31,7 +31,7 @@ Add as a dependency:
     }
     
     dependencies {
-	    compile 'com.github.h0tk3y:kotlin-monads:0.3'
+	    compile 'com.github.h0tk3y:kotlin-monads:0.3-1'
 	}
 
 See the usage examples in [tests](https://github.com/h0tk3y/kotlin-monads/tree/master/src/test/kotlin/com/github/h0tk3y/kotlinMonads).
@@ -130,8 +130,8 @@ This problem is effectively solved using the Kotlin coroutines: the compiler per
  code block under the hood. However, this coroutines use case is somewhat out of conventions: it might resume the same continuation
  several times and uses quite a dirty hack to do that.
     
-The result type parameter (`R` in `Monad<M, R`) is usually inferred, and the compiler controls the flow inside a *do block*, but still you need to
- downcast the `Monad<M, R>` to your actual monad type (e.g. `Monad<Maybe<*>, R>` to `Maybe<R>`), because the type system doesn't seem to allow this to be done
+The result type parameter (`R` in `Monad<M, R>`) is usually inferred, and the compiler controls the flow inside a *do block*, but still you need to
+ downcast the `Monad<M, R>` to your actual monad type (e.g. `Monad<Maybe<*>, R>` to `Maybe`), because the type system doesn't seem to allow this to be done
  automatically (if you know a way, please tell me).
  
  **Be careful with mutable state** in _do_ blocks, since all continuation calls will share it, sometimes resulting into counter-intuitive results:
