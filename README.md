@@ -1,6 +1,6 @@
 # kotlin-monads
 
-[![](https://jitpack.io/v/h0tk3y/kotlin-monads.svg)](https://jitpack.io/#h0tk3y/kotlin-monads) [![](https://img.shields.io/badge/kotlin-1.1--beta--22-blue.svg)](http://kotlinlang.org/)
+[![](https://jitpack.io/v/h0tk3y/kotlin-monads.svg)](https://jitpack.io/#h0tk3y/kotlin-monads) [![](https://img.shields.io/badge/kotlin-1.1--beta--38-blue.svg)](http://kotlinlang.org/)
 
 An attempt to implement monads in Kotlin, deeply inspired by Haskell monads, but restricted within the Kotlin type system.
 
@@ -31,7 +31,7 @@ Add as a dependency:
     }
     
     dependencies {
-	    compile 'com.github.h0tk3y:kotlin-monads:0.3-1'
+	    compile 'com.github.h0tk3y:kotlin-monads:0.4'
 	}
 
 See the usage examples in [tests](https://github.com/h0tk3y/kotlin-monads/tree/master/src/test/kotlin/com/github/h0tk3y/kotlinMonads).
