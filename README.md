@@ -30,7 +30,7 @@ Add as a dependency:
     
     dependencies {
         ...
-	compile 'com.github.h0tk3y:kotlin-monads:0.5'
+        compile 'com.github.h0tk3y:kotlin-monads:0.5'
     }
 
 See the usage examples in [tests](https://github.com/h0tk3y/kotlin-monads/tree/master/src/test/kotlin/com/github/h0tk3y/kotlinMonads).
@@ -106,7 +106,7 @@ Simple example that performs a monadic list nondeterministic expansion:
         monadListOf(y, x * y)
     }
     
-    assertEquals(monadListOf(1, 2, 1, 2, 2, 3, 2, 3, 3, 4, 3, 4), m)
+    assertEquals(monadListOf(1, 1, 2, 2, 2, 4, 3, 6, 3, 9, 4, 12), m)
     
 Or applied to an existing monad for convenience:
 
